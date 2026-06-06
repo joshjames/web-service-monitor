@@ -1,0 +1,52 @@
+# Configuration template for the Vector collection routing matrix
+
+[sources.edge_logs]
+type = "file"
+include = ["/var/log/edge/*log"]
+read_from = "beginning"
+
+# The core parsing pipeline using Vector Remap Language (VRL)
+[transforms.parse_http_anomalies]
+type = "remap"
+inputs = ["edge_logs"]
+source = '''
+# Parse standard combined log string patterns
+.message = parse_regex!(.message, r'^(?P<ip>\S+) \S+ \S+ \[(?P<ts>[^\]]+)\] "(?P<method>\S+) (?P<path>\S+) \S+" (?P<status>\d{3}) (?P<bytes>\d+)')
+
+# Convert status schema to integer for mathematical matching rules
+status_code = to_int!(.message.status)
+
+# Flag anomalies based on configuration filters (e.g., 501, 502)
+if status_code == 501 || status_code == 502 || status_code == 504 {
+    .is_anomaly = true
+    .anomaly_type = "HTTP_" + .message.status
+} else {
+    .is_anomaly = false
+}
+'''
+
+# Drop standard clean traffic to avoid metrics pollution
+[transforms.filter_anomalies_only]
+type = "filter"
+inputs = ["parse_http_anomalies"]
+condition = ".is_anomaly == true"
+
+# Transform strings into a native Prometheus metric gauge on the fly
+[transforms.anomaly_metrics]
+type = "log_to_metric"
+inputs = ["filter_anomalies_only"]
+
+  [[transforms.anomaly_metrics.metrics]]
+  type = "counter"
+  field = "anomaly_type"
+  name = "edge_http_anomaly_total"
+  namespace = "fabric"
+  [transforms.anomaly_metrics.metrics.tags]
+  status = "{{anomaly_type}}"
+  path = "{{message.path}}"
+
+# Expose a local scraping target endpoint for Prometheus
+[sinks.prometheus_output]
+type = "prometheus_exporter"
+inputs = ["anomaly_metrics"]
+address = "0.0.0.0:9598"

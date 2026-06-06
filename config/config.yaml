@@ -1,0 +1,19 @@
+# Edge Telemetry Fabric Configuration Context
+global:
+  environment: local-sandbox # Options: local-sandbox, kubernetes, aws
+  project_name: edge-anomaly-monitor
+
+edge_tier:
+  engine: nginx             # Options: nginx, haproxy, npm, aws-alb
+  listen_port: 8080
+  simulate_failures: true     # Spins up a broken mock backend upstream
+
+telemetry:
+  collector: vector         # Options: vector, promtail, alloy
+  target_events:
+    - 501                   # Not Implemented
+    - 502                   # Bad Gateway
+    - 504                   # Gateway Timeout
+  thresholds:
+    window_period: 1m
+    critical_error_count: 5   # Triggers alert state if hit within window
