@@ -15,7 +15,7 @@ A declarative, engine-agnostic platform engineering factory that injects high-pe
 * **Deterministic Verification Engine:** Automated GitHub Actions runner instantiates an isolated local sandbox, triggers an intentional chaos failure loop, and asserts metrics generation accuracy on every commit.
 
 ---
-
+```
 ## Repository Layout
 web-service-monitor/
 ├── .github/workflows/
@@ -31,7 +31,7 @@ web-service-monitor/
 ├── config/
 │   └── config.yaml         # Central source-of-truth configuration blueprint
 └── README.md
-
+```
 
 ---
 
@@ -57,6 +57,9 @@ telemetry:
   thresholds:
     window_period: "1m"
     critical_error_count: 5     # Triggers alert state if limit is breached
+
+  ```
+
 Local Sandbox Installation & Execution
 1. Prerequisites
 Ensure your local terminal has the following bin footprints:
@@ -68,33 +71,42 @@ Docker Engine & Compose V2
 2. Stand Up the Infrastructure
 Clone the engine repository and run the underlying Terraform compilation layer:
 
-Bash
+Bash```
 git clone [https://github.com/joshjames/web-service-monitor.git](https://github.com/joshjames/web-service-monitor.git)
 cd web-service-monitor/terraform
+```
 
 # Initialize providers and compile module blocks
+```
 terraform init
 terraform apply -auto-approve
+```
 3. Trigger Chaos Failure Ingress Simulation
 Once the containers are up, execute an automated connection loop hitting the deliberately unmapped or broken upstream route to generate anomalous web logs:
 
 Bash
+```
 echo "Injecting 10 edge failure requests..."
 for i in {1..10}; do 
   curl -i http://localhost:8080/broken-upstream-route
   sleep 0.2
 done
+```
 4. Assert Edge Collection Ingress
 Query the local Vector scraping endpoint to verify that the parsing engine cleanly extracted the telemetry codes and incremented the Prometheus metrics structure:
 
 Bash
+```
 curl -s http://localhost:9598/metrics | grep "fabric_edge_http_anomaly_total"
+```
 Expected metric assertion payload:
 
 Plaintext
+```
 # HELP fabric_edge_http_anomaly_total Total count of monitored HTTP edge anomalies intercepted.
 # TYPE fabric_edge_http_anomaly_total counter
 fabric_edge_http_anomaly_total{status="HTTP_502",path="/broken-upstream-route"} 10
+```
 Production Cloud Portability Pathway
 To upgrade the telemetry fabric from a local testing container mesh into a live enterprise environment:
 
